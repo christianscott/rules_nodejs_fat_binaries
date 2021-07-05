@@ -9,7 +9,7 @@ def _destination_path(file):
         return file.path[node_modules_idx:]
     return file.short_path
 
-def _executable_archive_impl(ctx):
+def _nodejs_fat_binary_impl(ctx):
     zip_artifact = ctx.actions.declare_file(ctx.label.name + ".zip")
 
     all_files = ctx.files.data + ctx.files.entry_point
@@ -56,8 +56,8 @@ def _executable_archive_impl(ctx):
         mnemonic = "BuildSelfExtractable",
     )
 
-executable_archive = rule(
-    _executable_archive_impl,
+nodejs_fat_binary = rule(
+    _nodejs_fat_binary_impl,
     executable = True,
     attrs = {
         "entry_point": attr.label(
@@ -69,7 +69,7 @@ executable_archive = rule(
             allow_files = True,
         ),
         "_launcher_template": attr.label(
-            default = Label("//tools:executable_archive_tmpl.sh"),
+            default = Label("//tools:nodejs_fat_binary_tmpl.sh"),
             allow_single_file = True,
         )
     },

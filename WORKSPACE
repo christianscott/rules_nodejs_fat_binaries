@@ -1,5 +1,5 @@
 workspace(
-    name = "bazel_node_zip_executables",
+    name = "nodejs_fat_binary",
     managed_directories = {"@examples_npm_managed": ["examples/npm_managed/node_modules"]},
 )
 

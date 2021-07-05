@@ -1,6 +1,6 @@
-load("//tools:executable_archive.bzl", "executable_archive")
+load("//tools:nodejs_fat_binary.bzl", "nodejs_fat_binary")
 
-executable_archive(
+nodejs_fat_binary(
     name = "archive",
     entry_point = ":index.js",
     data = glob(["*.js", "node_modules/**/*.js"])

@@ -1,1 +1,1 @@
-exports_files(["executable_archive_tmpl.sh"])
+exports_files(["nodejs_fat_binary_tmpl.sh"])
