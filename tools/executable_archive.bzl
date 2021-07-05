@@ -1,13 +1,21 @@
 """
 """
 
+def _destination_path(file):
+    node_modules_idx = file.path.find("node_modules")
+    if file.path.startswith("external") and node_modules_idx != -1:
+        # Caveat: this will merge all node_modules/ together
+        # TODO: handle multiple node_modules/, retain original structure
+        return file.path[node_modules_idx:]
+    return file.short_path
+
 def _executable_archive_impl(ctx):
     zip_artifact = ctx.actions.declare_file(ctx.label.name + ".zip")
 
     all_files = ctx.files.data + ctx.files.entry_point
     cp_files = [
-        ("mkdir -p $(dirname ${tmpdir}/%s)\n" % file.short_path +
-         "cp %s ${tmpdir}/%s" % (file.path, file.short_path))
+        ("mkdir -p $(dirname ${tmpdir}/%s)\n" % _destination_path(file) +
+         "cp %s ${tmpdir}/%s" % (file.path, _destination_path(file)))
         for file in all_files
     ]
     ctx.actions.run_shell(
@@ -28,6 +36,7 @@ def _executable_archive_impl(ctx):
         template = ctx.file._launcher_template,
         output = launcher,
         substitutions = {
+            # TODO: handle node_modules entrypoint
             "{ENTRYPOINT}": ctx.file.entry_point.short_path
         }
     )

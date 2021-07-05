@@ -1,0 +1,9 @@
+{
+  "name": "npm_managed",
+  "version": "nil",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "camelcase": "^6.2.0"
+  }
+}
