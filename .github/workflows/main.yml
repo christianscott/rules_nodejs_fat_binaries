@@ -15,9 +15,5 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v13
-
-      - name: Check nix installed
-        run: |
-          echo $(which nix)
+      - name: Test
+        run: bazel test //...
