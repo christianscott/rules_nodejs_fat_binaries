@@ -13,6 +13,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Bazel cache
+        uses: actions/cache@v2.1.4
+        env:
+          cache-name: bazel-cache
+        with:
+          path: |
+            ~/.cache/bazelisk
+            ~/.cache/bazel
+          key: ${{ runner.os }}-${{ env.cache-name }}
+
       - uses: actions/checkout@v2
 
       - name: Test
