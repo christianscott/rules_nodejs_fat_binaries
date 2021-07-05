@@ -1,4 +1,4 @@
-# POC: Build single file Node JS executables with Bazel
+# POC: Bazel rules to build fat Node JS binaries via zip files
 
 ## Examples
 
