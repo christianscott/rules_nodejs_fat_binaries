@@ -1,6 +1,23 @@
 """
 """
 
+script_template = """tmpdir=$(mktemp -d ${{TMPDIR:-/tmp}}/tmp.XXXXXXXX)
+trap "rm -fr ${{tmpdir}}" EXIT
+
+destination_paths=({destination_paths})
+paths=({paths})
+for i in {nums}
+do
+    mkdir -p $(dirname ${{tmpdir}}/${{destination_paths[i]}})
+    cp ${{paths[i]}} ${{tmpdir}}/${{destination_paths[i]}}
+done
+
+find ${{tmpdir}} -exec touch -t 198001010000.00 '{{}}' ';'
+d=${{PWD}}
+cd ${{tmpdir}}
+zip -rq ${{d}}/{zip_artifact_path} *
+"""
+
 def _destination_path(file):
     node_modules_idx = file.path.find("node_modules")
     if file.path.startswith("external") and node_modules_idx != -1:
@@ -9,25 +26,21 @@ def _destination_path(file):
         return file.path[node_modules_idx:]
     return file.short_path
 
+def _quote(s):
+    return "'{}'".format(s)
+
 def _nodejs_fat_binary_impl(ctx):
     zip_artifact = ctx.actions.declare_file(ctx.label.name + ".zip")
-
     all_files = ctx.files.data + ctx.files.entry_point
-    cp_files = [
-        ("mkdir -p $(dirname ${tmpdir}/%s)\n" % _destination_path(file) +
-         "cp %s ${tmpdir}/%s" % (file.path, _destination_path(file)))
-        for file in all_files
-    ]
     ctx.actions.run_shell(
         inputs = all_files,
         outputs = [zip_artifact],
-        command = "\n".join([
-            "tmpdir=$(mktemp -d ${TMPDIR:-/tmp}/tmp.XXXXXXXX)",
-            "trap \"rm -fr ${tmpdir}\" EXIT",
-        ] + cp_files + [
-            "find ${tmpdir} -exec touch -t 198001010000.00 '{}' ';'",
-            "(d=${PWD}; cd ${tmpdir}; zip -rq ${d}/%s *)" % zip_artifact.path,
-        ]),
+        command = script_template.format(
+            destination_paths = " ".join([_quote(_destination_path(file)) for file in all_files]),
+            paths = " ".join([_quote(file.path) for file in all_files]),
+            nums = " ".join([str(i) for i in range(len(all_files))]),
+            zip_artifact_path = _quote(zip_artifact.path),
+        ),
         mnemonic = "ZipBin",
     )
 
@@ -37,21 +50,21 @@ def _nodejs_fat_binary_impl(ctx):
         output = launcher,
         substitutions = {
             # TODO: handle node_modules entrypoint
-            "{ENTRYPOINT}": ctx.file.entry_point.short_path
-        }
+            "{ENTRYPOINT}": ctx.file.entry_point.short_path,
+        },
     )
 
     ctx.actions.run_shell(
         inputs = [launcher, zip_artifact],
         outputs = [ctx.outputs.executable],
         command = "\n".join([
-            "cat %s %s > %s" % (
+            "cat {} {} > {}".format(
                 launcher.path,
                 zip_artifact.path,
                 ctx.outputs.executable.path,
             ),
-            "zip -qA %s" % ctx.outputs.executable.path,
-            "chmod +x %s" % ctx.outputs.executable.path,
+            "zip -qA {}".format(ctx.outputs.executable.path),
+            "chmod +x {}".format(ctx.outputs.executable.path),
         ]),
         mnemonic = "BuildSelfExtractable",
     )
@@ -71,6 +84,6 @@ nodejs_fat_binary = rule(
         "_launcher_template": attr.label(
             default = Label("//tools:nodejs_fat_binary_tmpl.sh"),
             allow_single_file = True,
-        )
+        ),
     },
 )
